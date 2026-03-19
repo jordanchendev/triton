@@ -5,14 +5,14 @@ def _get_ocr():
     global _ocr
     if _ocr is None:
         from paddleocr import PaddleOCR
-        _ocr = PaddleOCR(use_angle_cls=True, lang="chinese_cht", use_gpu=True)
+        _ocr = PaddleOCR(use_angle_cls=True, lang="ch")
     return _ocr
 
 
 def extract_text(file_path: str) -> dict:
     """Extract text from PDF or image using PaddleOCR."""
     ocr = _get_ocr()
-    results = ocr.ocr(file_path, cls=True)
+    results = ocr.ocr(file_path)
 
     text_parts = []
     for page in results:

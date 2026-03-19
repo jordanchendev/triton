@@ -16,4 +16,5 @@ celery_app.conf.update(
     enable_utc=True,
     task_track_started=True,
     worker_prefetch_multiplier=1,
+    imports=["triton.workers.gpu_tasks", "triton.workers.cpu_tasks"],
 )
