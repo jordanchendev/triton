@@ -1,0 +1,54 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
+      - REDIS_URL=redis://redis:6379/0
+      - UPLOAD_DIR=/data/tmp
+    volumes:
+      - upload_data:/data/tmp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  cpu-worker:
+    build: .
+    command: celery -A triton.workers.celery_app worker -Q cpu -c 2 --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
+      - REDIS_URL=redis://redis:6379/0
+      - UPLOAD_DIR=/data/tmp
+    volumes:
+      - upload_data:/data/tmp
+    depends_on:
+      - redis
+      - postgres
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: triton
+      POSTGRES_PASSWORD: triton
+      POSTGRES_DB: triton
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U triton"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:
+  upload_data:
