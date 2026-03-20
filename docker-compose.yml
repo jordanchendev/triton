@@ -57,6 +57,26 @@ services:
       - postgres
     restart: unless-stopped
 
+  cpu-ml-worker:
+    build:
+      context: .
+      args:
+        INSTALL_ML: "true"
+    command: celery -A triton.workers.celery_app worker -Q cpu-ml -c 4 --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
+      - REDIS_URL=redis://redis:6379/0
+      - WHISPER_DEVICE=cpu
+      - WHISPER_MODEL=large-v3
+      - WHISPER_COMPUTE_TYPE=int8
+      - UPLOAD_DIR=/data/tmp
+    volumes:
+      - /data/tmp:/data/tmp
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     volumes:
