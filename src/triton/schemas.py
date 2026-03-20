@@ -22,9 +22,16 @@ class TaskStatus(str, Enum):
     failed = "failed"
 
 
+class DeviceType(str, Enum):
+    gpu = "gpu"
+    cpu = "cpu"
+    auto = "auto"
+
+
 class TaskCreate(BaseModel):
     type: TaskType
     source_url: str | None = None
+    device: DeviceType = DeviceType.auto
 
 
 class TaskResponse(BaseModel):

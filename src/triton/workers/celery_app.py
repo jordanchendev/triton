@@ -8,6 +8,7 @@ celery_app.conf.update(
     task_routes={
         "triton.workers.gpu_tasks.*": {"queue": "gpu"},
         "triton.workers.cpu_tasks.*": {"queue": "cpu"},
+        "triton.workers.cpu_ml_tasks.*": {"queue": "cpu-ml"},
     },
     task_serializer="json",
     result_serializer="json",
@@ -16,5 +17,9 @@ celery_app.conf.update(
     enable_utc=True,
     task_track_started=True,
     worker_prefetch_multiplier=1,
-    imports=["triton.workers.gpu_tasks", "triton.workers.cpu_tasks"],
+    imports=[
+        "triton.workers.gpu_tasks",
+        "triton.workers.cpu_tasks",
+        "triton.workers.cpu_ml_tasks",
+    ],
 )

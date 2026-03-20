@@ -45,5 +45,7 @@ def client(db_session):
 def mock_celery():
     with patch("triton.workers.cpu_tasks.download_and_transcribe.delay"), \
          patch("triton.workers.gpu_tasks.transcribe.delay"), \
-         patch("triton.workers.gpu_tasks.ocr.delay"):
+         patch("triton.workers.gpu_tasks.ocr.delay"), \
+         patch("triton.workers.cpu_ml_tasks.transcribe_cpu.delay"), \
+         patch("triton.workers.cpu_ml_tasks.ocr_parallel.delay"):
         yield
