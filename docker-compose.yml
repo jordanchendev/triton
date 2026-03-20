@@ -60,8 +60,7 @@ services:
   cpu-ml-worker:
     build:
       context: .
-      args:
-        INSTALL_ML: "true"
+      dockerfile: Dockerfile.gpu
     command: celery -A triton.workers.celery_app worker -Q cpu-ml -c 4 --loglevel=info
     environment:
       - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
@@ -72,6 +71,13 @@ services:
       - UPLOAD_DIR=/data/tmp
     volumes:
       - /data/tmp:/data/tmp
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     depends_on:
       - redis
       - postgres

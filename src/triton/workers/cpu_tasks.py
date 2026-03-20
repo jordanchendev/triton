@@ -2,12 +2,11 @@ from triton.workers.celery_app import celery_app
 
 
 @celery_app.task(name="triton.workers.cpu_tasks.download_and_transcribe")
-def download_and_transcribe(task_id: str, url: str, task_type: str):
-    """Download media from URL then dispatch GPU transcription."""
+def download_and_transcribe(task_id: str, url: str, task_type: str, device: str = "gpu"):
+    """Download media from URL then dispatch transcription to GPU or CPU."""
     from triton.services.downloader import download_audio
     from triton.database import SessionLocal
     from triton.models import Task
-    from triton.workers.gpu_tasks import transcribe
     from datetime import datetime, timezone
     import uuid
 
@@ -26,8 +25,13 @@ def download_and_transcribe(task_id: str, url: str, task_type: str):
         task.file_path = file_path
         db.commit()
 
-        # Chain to GPU worker
-        transcribe.delay(task_id, file_path)
+        # Chain to transcription worker based on device
+        if device == "cpu":
+            from triton.workers.cpu_ml_tasks import transcribe_cpu
+            transcribe_cpu.delay(task_id, file_path)
+        else:
+            from triton.workers.gpu_tasks import transcribe
+            transcribe.delay(task_id, file_path)
     except Exception as e:
         task.status = "failed"
         task.error_message = str(e)

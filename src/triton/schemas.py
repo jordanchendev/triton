@@ -43,6 +43,7 @@ class TaskResponse(BaseModel):
     result_text: str | None
     metadata: dict | None = Field(None, validation_alias="metadata_")
     error_message: str | None
+    device: str | None
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None

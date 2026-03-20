@@ -19,6 +19,7 @@ class Task(Base):
     result_text: Mapped[str | None] = mapped_column(Text)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSON)
     error_message: Mapped[str | None] = mapped_column(Text)
+    device: Mapped[str | None] = mapped_column(String(10))
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
     started_at: Mapped[datetime | None] = mapped_column()
     completed_at: Mapped[datetime | None] = mapped_column()

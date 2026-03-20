@@ -47,5 +47,6 @@ def mock_celery():
          patch("triton.workers.gpu_tasks.transcribe.delay"), \
          patch("triton.workers.gpu_tasks.ocr.delay"), \
          patch("triton.workers.cpu_ml_tasks.transcribe_cpu.delay"), \
-         patch("triton.workers.cpu_ml_tasks.ocr_parallel.delay"):
+         patch("triton.workers.cpu_ml_tasks.ocr_parallel.delay"), \
+         patch("triton.services.queue.get_queue_length", return_value=0):
         yield

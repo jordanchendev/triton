@@ -9,29 +9,19 @@ from triton.config import settings
 from triton.database import get_db
 from triton.models import Task
 from triton.schemas import TaskCreate, TaskResponse, TaskListResponse, TaskType, DeviceType
+from triton.services.queue import get_queue_length
 
 router = APIRouter()
 
 
 def _resolve_device(device: DeviceType) -> str:
-    """Resolve 'auto' device to 'gpu' or 'cpu' based on queue status."""
+    """Resolve 'auto' device to 'gpu' or 'cpu' based on GPU queue depth."""
     if device != DeviceType.auto:
         return device.value
-    try:
-        from triton.workers.celery_app import celery_app
-        inspect = celery_app.control.inspect(timeout=1)
-        active = inspect.active() or {}
-        # Check if any gpu worker has active tasks
-        for worker_name, tasks in active.items():
-            if "gpu" in worker_name and len(tasks) > 0:
-                return "cpu"
-        return "gpu"
-    except Exception:
-        return "gpu"
+    return "cpu" if get_queue_length("gpu") > 0 else "gpu"
 
 
 def _dispatch_transcribe(task_id: str, source: str, device: str):
-    """Dispatch transcription to GPU or CPU worker."""
     if device == "cpu":
         from triton.workers.cpu_ml_tasks import transcribe_cpu
         transcribe_cpu.delay(task_id, source)
@@ -41,7 +31,6 @@ def _dispatch_transcribe(task_id: str, source: str, device: str):
 
 
 def _dispatch_ocr(task_id: str, file_path: str, device: str):
-    """Dispatch OCR to GPU (single) or CPU (parallel pages)."""
     if device == "cpu":
         from triton.workers.cpu_ml_tasks import ocr_parallel
         ocr_parallel.delay(task_id, file_path)
@@ -52,17 +41,16 @@ def _dispatch_ocr(task_id: str, file_path: str, device: str):
 
 @router.post("", response_model=TaskResponse, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
-    task = Task(type=payload.type.value, source_url=payload.source_url)
+    device = _resolve_device(payload.device)
+    task = Task(type=payload.type.value, source_url=payload.source_url, device=device)
     db.add(task)
     db.commit()
     db.refresh(task)
 
-    device = _resolve_device(payload.device)
     task_id = str(task.id)
-
     if payload.type in (TaskType.youtube, TaskType.podcast):
         from triton.workers.cpu_tasks import download_and_transcribe
-        download_and_transcribe.delay(task_id, payload.source_url, payload.type.value)
+        download_and_transcribe.delay(task_id, payload.source_url, payload.type.value, device)
     elif payload.type in (TaskType.video, TaskType.audio):
         _dispatch_transcribe(task_id, payload.source_url, device)
     elif payload.type in (TaskType.pdf, TaskType.image):
@@ -86,14 +74,13 @@ def create_task_with_upload(
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    task = Task(type=type.value, file_path=file_path)
+    resolved_device = _resolve_device(device)
+    task = Task(type=type.value, file_path=file_path, device=resolved_device)
     db.add(task)
     db.commit()
     db.refresh(task)
 
-    resolved_device = _resolve_device(device)
     task_id = str(task.id)
-
     if type in (TaskType.video, TaskType.audio):
         _dispatch_transcribe(task_id, file_path, resolved_device)
     elif type in (TaskType.pdf, TaskType.image):
