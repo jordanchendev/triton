@@ -6,6 +6,7 @@ router = APIRouter()
 
 
 def _get_gpu_info() -> tuple[bool, int | None, int | None]:
+    # Try nvidia-smi first (works if nvidia tools are installed)
     try:
         import subprocess
         result = subprocess.run(
@@ -16,6 +17,13 @@ def _get_gpu_info() -> tuple[bool, int | None, int | None]:
             used, total = result.stdout.strip().split(", ")
             return True, int(used), int(total)
     except (FileNotFoundError, Exception):
+        pass
+    # Fallback: check via ctranslate2 (installed with faster-whisper)
+    try:
+        import ctranslate2
+        if ctranslate2.get_supported_compute_types("cuda"):
+            return True, None, None
+    except Exception:
         pass
     return False, None, None
 
