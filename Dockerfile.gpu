@@ -1,0 +1,21 @@
+FROM nvidia/cuda:12.6.3-runtime-ubuntu24.04
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-venv python3-pip \
+    ffmpeg libgl1 libglib2.0-0 \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
+COPY src/ src/
+COPY alembic/ alembic/
+COPY alembic.ini .
+RUN pip install --no-cache-dir --break-system-packages . && \
+    pip install --no-cache-dir --break-system-packages faster-whisper paddlepaddle paddleocr
+COPY scripts/ scripts/
+RUN chmod +x scripts/entrypoint.sh
+
+ENTRYPOINT ["scripts/entrypoint.sh"]
+CMD ["celery", "-A", "triton.workers.celery_app", "worker", "-Q", "gpu", "-c", "1", "--loglevel=info"]
