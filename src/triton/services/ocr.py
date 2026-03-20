@@ -1,5 +1,6 @@
 import os
-import tempfile
+
+from triton.config import settings
 
 _ocr = None
 
@@ -8,7 +9,11 @@ def _get_ocr():
     global _ocr
     if _ocr is None:
         from paddleocr import PaddleOCR
-        _ocr = PaddleOCR(use_angle_cls=True, lang="ch")
+        # PP-OCRv5 needs paddlepaddle-gpu; use v4 for CPU compatibility
+        if settings.whisper_device == "cuda":
+            _ocr = PaddleOCR(use_angle_cls=True, lang="ch")
+        else:
+            _ocr = PaddleOCR(use_angle_cls=True, lang="ch", ocr_version="PP-OCRv4")
     return _ocr
 
 
