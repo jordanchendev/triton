@@ -19,7 +19,8 @@ services:
   gpu-worker:
     build:
       context: .
-      dockerfile: Dockerfile
+      args:
+        INSTALL_ML: "true"
     command: celery -A triton.workers.celery_app worker -Q gpu -c 1 --loglevel=info
     environment:
       - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
@@ -41,7 +42,10 @@ services:
     restart: unless-stopped
 
   cpu-worker:
-    build: .
+    build:
+      context: .
+      args:
+        INSTALL_ML: "true"
     command: celery -A triton.workers.celery_app worker -Q cpu -c 2 --loglevel=info
     environment:
       - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
