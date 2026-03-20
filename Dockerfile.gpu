@@ -12,8 +12,9 @@ COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini .
 RUN pip install --no-cache-dir --break-system-packages . && \
-    pip install --no-cache-dir --break-system-packages faster-whisper paddlepaddle paddleocr \
-    nvidia-cublas-cu12 nvidia-cudnn-cu12
+    pip install --no-cache-dir --break-system-packages faster-whisper paddleocr \
+    nvidia-cublas-cu12 nvidia-cudnn-cu12 && \
+    pip install --no-cache-dir --break-system-packages paddlepaddle-gpu
 COPY scripts/ scripts/
 RUN chmod +x scripts/entrypoint.sh
 
