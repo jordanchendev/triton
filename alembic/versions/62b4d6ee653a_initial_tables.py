@@ -54,6 +54,7 @@ def upgrade() -> None:
     sa.Column('result_text', sa.Text(), nullable=True),
     sa.Column('metadata', sa.JSON(), nullable=True),
     sa.Column('error_message', sa.Text(), nullable=True),
+    sa.Column("device", sa.String(length=10), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('started_at', sa.DateTime(), nullable=True),
     sa.Column('completed_at', sa.DateTime(), nullable=True),
