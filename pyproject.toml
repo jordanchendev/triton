@@ -28,6 +28,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "httpx>=0.27",
     "pytest-cov>=5.0",
+    "ruff>=0.5",
 ]
 
 [build-system]
@@ -36,6 +37,38 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort — import sorting
+    "UP",   # pyupgrade — modernise syntax
+    "B",    # bugbear — common bug patterns
+    "SIM",  # simplify — unnecessary complexity
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",   # line-too-long — handled by formatter
+    "B008",   # function-call-in-default-argument — FastAPI Depends()
+    "RUF012", # mutable-class-default — SQLAlchemy / Pydantic
+    "RUF001", # ambiguous-unicode-character-string — Chinese text is intentional
+    "RUF002", # ambiguous-unicode-character-docstring
+    "RUF003", # ambiguous-unicode-character-comment
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["triton"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
