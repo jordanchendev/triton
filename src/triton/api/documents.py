@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from triton.database import get_db
 from triton.models import Document
-from triton.schemas import DocumentCreate, DocumentResponse, DocumentListResponse
+from triton.schemas import DocumentCreate, DocumentListResponse, DocumentResponse
 
 router = APIRouter()
 

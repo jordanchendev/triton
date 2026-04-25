@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from triton.database import get_db
 from triton.models import Schedule
-from triton.schemas import ScheduleCreate, ScheduleUpdate, ScheduleResponse
+from triton.schemas import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 
 router = APIRouter()
 

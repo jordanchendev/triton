@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from triton.api import tasks, documents, schedules, health
+from triton.api import documents, health, schedules, tasks
 
 app = FastAPI(title="Triton", description="Media-to-text GPU worker for OpenClaw")
 

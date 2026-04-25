@@ -1,10 +1,13 @@
 def test_create_document(client):
-    response = client.post("/documents", json={
-        "type": "web",
-        "title": "Market Analysis",
-        "content": "S&P 500 rose 2% today...",
-        "source_url": "https://example.com/article",
-    })
+    response = client.post(
+        "/documents",
+        json={
+            "type": "web",
+            "title": "Market Analysis",
+            "content": "S&P 500 rose 2% today...",
+            "source_url": "https://example.com/article",
+        },
+    )
     assert response.status_code == 201
     data = response.json()
     assert data["content"] == "S&P 500 rose 2% today..."

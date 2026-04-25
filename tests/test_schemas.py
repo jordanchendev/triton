@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from triton.schemas import TaskCreate, DocumentCreate, ScheduleCreate
+from triton.schemas import DocumentCreate, ScheduleCreate, TaskCreate
 
 
 def test_task_create_with_url():

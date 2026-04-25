@@ -1,13 +1,13 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from triton.database import Base, get_db
 from triton.main import app
-
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -43,10 +43,12 @@ def client(db_session):
 
 @pytest.fixture(autouse=True)
 def mock_celery():
-    with patch("triton.workers.cpu_tasks.download_and_transcribe.delay"), \
-         patch("triton.workers.gpu_tasks.transcribe.delay"), \
-         patch("triton.workers.gpu_tasks.ocr.delay"), \
-         patch("triton.workers.cpu_ml_tasks.transcribe_cpu.delay"), \
-         patch("triton.workers.cpu_ml_tasks.ocr_parallel.delay"), \
-         patch("triton.services.queue.get_queue_length", return_value=0):
+    with (
+        patch("triton.workers.cpu_tasks.download_and_transcribe.delay"),
+        patch("triton.workers.gpu_tasks.transcribe.delay"),
+        patch("triton.workers.gpu_tasks.ocr.delay"),
+        patch("triton.workers.cpu_ml_tasks.transcribe_cpu.delay"),
+        patch("triton.workers.cpu_ml_tasks.ocr_parallel.delay"),
+        patch("triton.services.queue.get_queue_length", return_value=0),
+    ):
         yield

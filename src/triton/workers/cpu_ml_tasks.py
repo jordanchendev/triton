@@ -1,4 +1,6 @@
+import contextlib
 import os
+from datetime import UTC
 
 from celery import chord
 
@@ -10,12 +12,13 @@ def ocr_parallel(task_id: str, file_path: str):
     """Split PDF into pages and dispatch parallel OCR tasks.
     Tries PyMuPDF text extraction first — skips OCR if PDF has embedded text.
     """
-    from triton.services.ocr import try_pymupdf_text, split_pdf_to_images
+    import tempfile
+    import uuid
+    from datetime import datetime
+
     from triton.database import SessionLocal
     from triton.models import Task
-    from datetime import datetime, timezone
-    import uuid
-    import tempfile
+    from triton.services.ocr import split_pdf_to_images, try_pymupdf_text
 
     db = SessionLocal()
     try:
@@ -25,7 +28,7 @@ def ocr_parallel(task_id: str, file_path: str):
 
         task.status = "processing"
         task.step = "extracting"
-        task.started_at = datetime.now(timezone.utc)
+        task.started_at = datetime.now(UTC)
         if not task.device:
             task.device = "cpu"
         db.commit()
@@ -37,7 +40,7 @@ def ocr_parallel(task_id: str, file_path: str):
             task.step = None
             task.result_text = fast_result["text"]
             task.metadata_ = fast_result["metadata"]
-            task.completed_at = datetime.now(timezone.utc)
+            task.completed_at = datetime.now(UTC)
             db.commit()
             return
 
@@ -59,7 +62,7 @@ def ocr_parallel(task_id: str, file_path: str):
     except Exception as e:
         task.status = "failed"
         task.error_message = str(e)
-        task.completed_at = datetime.now(timezone.utc)
+        task.completed_at = datetime.now(UTC)
         db.commit()
     finally:
         db.close()
@@ -70,15 +73,14 @@ def ocr_page(image_path: str, page_num: int) -> dict:
     """OCR a single page image. Returns {page_num, text}. Resilient — returns empty text on error."""
     try:
         from triton.services.ocr import extract_text_from_page
+
         text = extract_text_from_page(image_path)
-    except Exception as e:
+    except Exception:
         text = ""
 
     # Clean up page image
-    try:
+    with contextlib.suppress(OSError):
         os.remove(image_path)
-    except OSError:
-        pass
 
     return {"page_num": page_num, "text": text}
 
@@ -86,10 +88,11 @@ def ocr_page(image_path: str, page_num: int) -> dict:
 @celery_app.task(name="triton.workers.cpu_ml_tasks.ocr_aggregate")
 def ocr_aggregate(page_results: list[dict], task_id: str, total_pages: int):
     """Aggregate parallel OCR results and update task."""
+    import uuid
+    from datetime import datetime
+
     from triton.database import SessionLocal
     from triton.models import Task
-    from datetime import datetime, timezone
-    import uuid
 
     db = SessionLocal()
     try:
@@ -104,12 +107,12 @@ def ocr_aggregate(page_results: list[dict], task_id: str, total_pages: int):
         task.step = None
         task.result_text = full_text
         task.metadata_ = {"pages": total_pages, "method": "paddleocr"}
-        task.completed_at = datetime.now(timezone.utc)
+        task.completed_at = datetime.now(UTC)
         db.commit()
     except Exception as e:
         task.status = "failed"
         task.error_message = str(e)
-        task.completed_at = datetime.now(timezone.utc)
+        task.completed_at = datetime.now(UTC)
         db.commit()
     finally:
         db.close()
@@ -118,10 +121,11 @@ def ocr_aggregate(page_results: list[dict], task_id: str, total_pages: int):
 @celery_app.task(name="triton.workers.cpu_ml_tasks.ocr_chord_error")
 def ocr_chord_error(request, exc, traceback, task_id: str):
     """Handle chord failure — mark task as failed instead of leaving it stuck."""
+    import uuid
+    from datetime import datetime
+
     from triton.database import SessionLocal
     from triton.models import Task
-    from datetime import datetime, timezone
-    import uuid
 
     db = SessionLocal()
     try:
@@ -129,7 +133,7 @@ def ocr_chord_error(request, exc, traceback, task_id: str):
         if task and task.status == "processing":
             task.status = "failed"
             task.error_message = f"OCR chord failed: {exc}"
-            task.completed_at = datetime.now(timezone.utc)
+            task.completed_at = datetime.now(UTC)
             db.commit()
     finally:
         db.close()
@@ -140,4 +144,5 @@ def transcribe_cpu(task_id: str, file_path: str):
     """Transcribe audio/video using faster-whisper on CPU."""
     from triton.services.task_runner import run_task
     from triton.services.transcriber import transcribe_file
+
     run_task(task_id, "transcribing", lambda: transcribe_file(file_path), device="cpu")

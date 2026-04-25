@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, Index, JSON, String, Text, Uuid
+from sqlalchemy import JSON, Boolean, Index, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from triton.database import Base
@@ -20,7 +20,7 @@ class Task(Base):
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSON)
     error_message: Mapped[str | None] = mapped_column(Text)
     device: Mapped[str | None] = mapped_column(String(10))
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
     started_at: Mapped[datetime | None] = mapped_column()
     completed_at: Mapped[datetime | None] = mapped_column()
 
@@ -42,7 +42,7 @@ class Schedule(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     last_run: Mapped[datetime | None] = mapped_column()
     next_run: Mapped[datetime | None] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
 
 class Document(Base):
@@ -54,7 +54,7 @@ class Document(Base):
     title: Mapped[str | None] = mapped_column(Text)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSON)
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_documents_type", "type"),

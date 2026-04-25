@@ -9,8 +9,9 @@ def _get_ocr():
     global _ocr
     if _ocr is None:
         if settings.whisper_device != "cuda":
-            os.environ["FLAGS_use_mkldnn"] = "0"
+            os.environ["FLAGS_USE_MKLDNN"] = "0"
         from paddleocr import PaddleOCR
+
         if settings.whisper_device == "cuda":
             _ocr = PaddleOCR(use_angle_cls=True, lang="ch")
         else:
@@ -26,6 +27,7 @@ def try_pymupdf_text(file_path: str) -> dict | None:
         return None
 
     import fitz
+
     doc = fitz.open(file_path)
     pages_text = []
     pages_with_text = 0

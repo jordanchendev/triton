@@ -13,10 +13,12 @@ def download_audio(url: str, task_type: str) -> str:
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_template,
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "wav",
-        }],
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "wav",
+            }
+        ],
         "quiet": True,
         "no_warnings": True,
     }

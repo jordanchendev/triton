@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from triton.config import settings
 from triton.database import get_db
 from triton.models import Task
-from triton.schemas import TaskCreate, TaskResponse, TaskListResponse, TaskType, DeviceType
+from triton.schemas import DeviceType, TaskCreate, TaskListResponse, TaskResponse, TaskType
 from triton.services.queue import get_queue_length
 
 router = APIRouter()
@@ -24,18 +24,22 @@ def _resolve_device(device: DeviceType) -> str:
 def _dispatch_transcribe(task_id: str, source: str, device: str):
     if device == "cpu":
         from triton.workers.cpu_ml_tasks import transcribe_cpu
+
         transcribe_cpu.delay(task_id, source)
     else:
         from triton.workers.gpu_tasks import transcribe
+
         transcribe.delay(task_id, source)
 
 
 def _dispatch_ocr(task_id: str, file_path: str, device: str):
     if device == "cpu":
         from triton.workers.cpu_ml_tasks import ocr_parallel
+
         ocr_parallel.delay(task_id, file_path)
     else:
         from triton.workers.gpu_tasks import ocr
+
         ocr.delay(task_id, file_path)
 
 
@@ -50,6 +54,7 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     task_id = str(task.id)
     if payload.type in (TaskType.youtube, TaskType.podcast):
         from triton.workers.cpu_tasks import download_and_transcribe
+
         download_and_transcribe.delay(task_id, payload.source_url, payload.type.value, device)
     elif payload.type in (TaskType.video, TaskType.audio):
         _dispatch_transcribe(task_id, payload.source_url, device)

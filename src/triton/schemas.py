@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     youtube = "youtube"
     podcast = "podcast"
     video = "video"
@@ -14,7 +14,7 @@ class TaskType(str, Enum):
     image = "image"
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     queued = "queued"
     downloading = "downloading"
     processing = "processing"
@@ -22,7 +22,7 @@ class TaskStatus(str, Enum):
     failed = "failed"
 
 
-class DeviceType(str, Enum):
+class DeviceType(StrEnum):
     gpu = "gpu"
     cpu = "cpu"
     auto = "auto"
