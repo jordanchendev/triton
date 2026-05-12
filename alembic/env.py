@@ -1,11 +1,11 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from triton.config import settings
 from triton.database import Base
-from triton.models import Task, Schedule, Document  # noqa: F401
+from triton.models import Document, Schedule, Task  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
