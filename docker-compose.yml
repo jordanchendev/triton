@@ -4,16 +4,19 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://triton:triton@host.docker.internal:5433/triton
+      - REDIS_URL=redis://host.docker.internal:6379/0
       - UPLOAD_DIR=/data/tmp
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /data/tmp:/data/tmp
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   gpu-worker:
@@ -22,10 +25,12 @@ services:
       dockerfile: Dockerfile.gpu
     command: celery -A triton.workers.celery_app worker -Q gpu -c 1 --loglevel=info
     environment:
-      - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://triton:triton@host.docker.internal:5433/triton
+      - REDIS_URL=redis://host.docker.internal:6379/0
       - WHISPER_DEVICE=cuda
       - UPLOAD_DIR=/data/tmp
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /data/tmp:/data/tmp
     deploy:
@@ -36,8 +41,7 @@ services:
               count: 1
               capabilities: [gpu]
     depends_on:
-      - redis
-      - postgres
+      - api
     restart: unless-stopped
 
   cpu-worker:
@@ -47,14 +51,15 @@ services:
         INSTALL_ML: "true"
     command: celery -A triton.workers.celery_app worker -Q cpu -c 2 --loglevel=info
     environment:
-      - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://triton:triton@host.docker.internal:5433/triton
+      - REDIS_URL=redis://host.docker.internal:6379/0
       - UPLOAD_DIR=/data/tmp
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /data/tmp:/data/tmp
     depends_on:
-      - redis
-      - postgres
+      - api
     restart: unless-stopped
 
   cpu-ml-worker:
@@ -63,12 +68,14 @@ services:
       dockerfile: Dockerfile.gpu
     command: celery -A triton.workers.celery_app worker -Q cpu-ml -c 4 --loglevel=info
     environment:
-      - DATABASE_URL=postgresql://triton:triton@postgres:5432/triton
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://triton:triton@host.docker.internal:5433/triton
+      - REDIS_URL=redis://host.docker.internal:6379/0
       - WHISPER_DEVICE=cpu
       - WHISPER_MODEL=large-v3
       - WHISPER_COMPUTE_TYPE=int8
       - UPLOAD_DIR=/data/tmp
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /data/tmp:/data/tmp
     deploy:
@@ -79,27 +86,5 @@ services:
               count: 1
               capabilities: [gpu]
     depends_on:
-      - redis
-      - postgres
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - /data/redis:/data
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: triton
-      POSTGRES_PASSWORD: triton
-      POSTGRES_DB: triton
-    volumes:
-      - /data/postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U triton"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - api
     restart: unless-stopped
