@@ -33,6 +33,12 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - /data/tmp:/data/tmp
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
     deploy:
       resources:
         reservations:
@@ -78,6 +84,12 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - /data/tmp:/data/tmp
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
     deploy:
       resources:
         reservations:
