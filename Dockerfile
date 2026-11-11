@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 
 COPY --from=denoland/deno:bin-2.9.7 /deno /usr/local/bin/deno
+COPY --from=ghcr.io/astral-sh/uv:0.9.30 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
@@ -10,14 +11,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
+COPY pyproject.toml uv.lock .
 COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini .
 ARG INSTALL_ML=false
-RUN pip install --no-cache-dir . && \
+RUN uv export --frozen --no-dev --no-hashes --no-emit-project -o /tmp/req.txt && \
+    pip install --no-cache-dir -r /tmp/req.txt && \
+    pip install --no-cache-dir --no-deps . && \
     if [ "$INSTALL_ML" = "true" ]; then \
-        pip install --no-cache-dir faster-whisper paddlepaddle paddleocr; \
+        pip install --no-cache-dir -c /tmp/req.txt faster-whisper paddlepaddle paddleocr; \
     fi
 COPY scripts/ scripts/
 RUN chmod +x scripts/entrypoint.sh
