@@ -1,5 +1,7 @@
 FROM nvidia/cuda:12.6.3-runtime-ubuntu24.04
 
+COPY --from=ghcr.io/astral-sh/uv:0.9.30 /uv /usr/local/bin/uv
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -7,14 +9,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
+COPY pyproject.toml uv.lock .
 COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini .
-RUN pip install --no-cache-dir --break-system-packages . && \
-    pip install --no-cache-dir --break-system-packages faster-whisper paddleocr \
+RUN uv export --frozen --no-dev --no-hashes --no-emit-project -o /tmp/req.txt && \
+    pip install --no-cache-dir --break-system-packages -r /tmp/req.txt && \
+    pip install --no-cache-dir --break-system-packages --no-deps . && \
+    pip install --no-cache-dir --break-system-packages -c /tmp/req.txt faster-whisper paddleocr \
     nvidia-cublas-cu12 nvidia-cudnn-cu12 && \
-    pip install --no-cache-dir --break-system-packages paddlepaddle-gpu -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+    pip install --no-cache-dir --break-system-packages -c /tmp/req.txt paddlepaddle-gpu -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
 COPY scripts/ scripts/
 RUN chmod +x scripts/entrypoint.sh
 
