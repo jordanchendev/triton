@@ -19,6 +19,7 @@ def download_audio(url: str, task_type: str) -> str:
                 "preferredcodec": "wav",
             }
         ],
+        "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
     }

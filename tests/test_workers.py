@@ -1,5 +1,8 @@
 from unittest.mock import MagicMock, patch
 
+from triton.config import settings
+from triton.services.downloader import download_audio
+
 
 def test_transcribe_file_returns_text():
     mock_segment = MagicMock()
@@ -28,3 +31,13 @@ def test_extract_text_returns_text():
         result = extract_text("/tmp/test.png")
         assert "Hello" in result["text"]
         assert "World" in result["text"]
+
+
+def test_download_audio_ignores_playlist_in_url(tmp_path):
+    with patch.object(settings, "upload_dir", str(tmp_path)), patch("yt_dlp.YoutubeDL") as mock_ydl:
+        ydl = mock_ydl.return_value.__enter__.return_value
+        ydl.extract_info.return_value = {"id": "abc"}
+        path = download_audio("https://www.youtube.com/watch?v=abc&list=WL", "youtube")
+
+    assert mock_ydl.call_args.args[0]["noplaylist"] is True
+    assert path == str(tmp_path / "abc.wav")
