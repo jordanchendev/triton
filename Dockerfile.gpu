@@ -13,12 +13,10 @@ COPY pyproject.toml uv.lock .
 COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini .
-RUN uv export --frozen --no-dev --no-hashes --no-emit-project -o /tmp/req.txt && \
-    pip install --no-cache-dir --break-system-packages -r /tmp/req.txt && \
-    pip install --no-cache-dir --break-system-packages --no-deps . && \
-    pip install --no-cache-dir --break-system-packages -c /tmp/req.txt faster-whisper paddleocr \
-    nvidia-cublas-cu12 nvidia-cudnn-cu12 && \
-    pip install --no-cache-dir --break-system-packages -c /tmp/req.txt paddlepaddle-gpu -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+RUN uv export --frozen --no-dev --extra gpu --no-hashes --no-emit-project -o /tmp/req.txt && \
+    pip install --no-cache-dir --break-system-packages -r /tmp/req.txt \
+    --extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu126/ && \
+    pip install --no-cache-dir --break-system-packages --no-deps .
 COPY scripts/ scripts/
 RUN chmod +x scripts/entrypoint.sh
 

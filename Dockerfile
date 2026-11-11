@@ -16,12 +16,10 @@ COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini .
 ARG INSTALL_ML=false
-RUN uv export --frozen --no-dev --no-hashes --no-emit-project -o /tmp/req.txt && \
+RUN extra=$([ "$INSTALL_ML" = "true" ] && echo "--extra cpu-ml"); \
+    uv export --frozen --no-dev $extra --no-hashes --no-emit-project -o /tmp/req.txt && \
     pip install --no-cache-dir -r /tmp/req.txt && \
-    pip install --no-cache-dir --no-deps . && \
-    if [ "$INSTALL_ML" = "true" ]; then \
-        pip install --no-cache-dir -c /tmp/req.txt faster-whisper paddlepaddle paddleocr; \
-    fi
+    pip install --no-cache-dir --no-deps .
 COPY scripts/ scripts/
 RUN chmod +x scripts/entrypoint.sh
 
