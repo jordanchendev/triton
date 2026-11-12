@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from triton.config import settings
 from triton.services.downloader import download_audio
+from triton.services.ocr import extract_text, extract_text_from_page
 
 
 def test_transcribe_file_returns_text():
@@ -30,8 +31,6 @@ OCR_PAGES = [
 def test_extract_text_joins_recognised_lines_of_every_page():
     with patch("triton.services.ocr._get_ocr") as mock_ocr:
         mock_ocr.return_value.ocr.return_value = OCR_PAGES
-        from triton.services.ocr import extract_text
-
         result = extract_text("/tmp/test.png")
 
     assert result["text"] == "Hello\nWorld\nPage two"
@@ -41,8 +40,6 @@ def test_extract_text_joins_recognised_lines_of_every_page():
 def test_extract_text_from_page_returns_recognised_lines():
     with patch("triton.services.ocr._get_ocr") as mock_ocr:
         mock_ocr.return_value.ocr.return_value = OCR_PAGES[:1]
-        from triton.services.ocr import extract_text_from_page
-
         assert extract_text_from_page("/tmp/page.png") == "Hello\nWorld"
 
 
