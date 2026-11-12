@@ -57,36 +57,21 @@ def extract_text(file_path: str) -> dict:
         return pymupdf_result
 
     # Slow path: OCR for scanned PDFs and images
-    ocr = _get_ocr()
-    results = ocr.ocr(file_path)
-
-    text_parts = []
-    for page in results:
-        if page is None:
-            continue
-        for line in page:
-            text_parts.append(line[1][0])
-
+    results = _get_ocr().ocr(file_path)
     return {
-        "text": "\n".join(text_parts),
+        "text": _join_texts(results),
         "metadata": {"pages": len(results), "method": "paddleocr"},
     }
 
 
 def extract_text_from_page(image_path: str) -> str:
     """Extract text from a single page image using OCR."""
-    ocr = _get_ocr()
-    results = ocr.ocr(image_path)
+    return _join_texts(_get_ocr().ocr(image_path))
 
-    text_parts = []
-    if results:
-        for page in results:
-            if page is None:
-                continue
-            for line in page:
-                text_parts.append(line[1][0])
 
-    return "\n".join(text_parts)
+def _join_texts(results) -> str:
+    """PaddleOCR 3.x returns one OCRResult mapping per page, with the recognised lines in rec_texts."""
+    return "\n".join(text for page in results for text in page["rec_texts"])
 
 
 def split_pdf_to_images(pdf_path: str, output_dir: str) -> list[str]:
