@@ -1,8 +1,15 @@
 from unittest.mock import MagicMock, patch
 
+from celery import Celery
+from celery.app.task import Task as CeleryTask
+from celery.backends.cache import CacheBackend
+
 from triton.config import settings
+from triton.models import Task
 from triton.services.downloader import download_audio
 from triton.services.ocr import extract_text, extract_text_from_page
+from triton.workers.celery_app import celery_app
+from triton.workers.cpu_ml_tasks import ocr_parallel
 
 
 def test_transcribe_file_returns_text():
@@ -51,3 +58,33 @@ def test_download_audio_ignores_playlist_in_url(tmp_path):
 
     assert mock_ydl.call_args.args[0]["noplaylist"] is True
     assert path == str(tmp_path / "abc.wav")
+
+
+def test_ocr_parallel_queues_one_ocr_page_per_scanned_page(db_session, tmp_path):
+    task = Task(type="pdf", file_path="/tmp/scan.pdf")
+    db_session.add(task)
+    db_session.commit()
+    task_id = task.id
+    pages = [str(tmp_path / "page_0000.png"), str(tmp_path / "page_0001.png")]
+    queued = []
+
+    def record(self, args=None, kwargs=None, **options):
+        queued.append((self.name, args))
+
+    # Real chord dispatch down to Task.apply_async: eager mode would skip the group checks that rejected link_error.
+    with (
+        patch("triton.database.SessionLocal", return_value=db_session),
+        patch("triton.services.ocr.try_pymupdf_text", return_value=None),
+        patch("triton.services.ocr.split_pdf_to_images", return_value=pages),
+        patch("tempfile.mkdtemp", return_value=str(tmp_path)),
+        patch.object(Celery, "backend", CacheBackend(app=celery_app, url="memory://")),
+        patch.object(CeleryTask, "apply_async", record),
+    ):
+        ocr_parallel(str(task_id), "/tmp/scan.pdf")
+
+    saved = db_session.get(Task, task_id)
+    assert (saved.status, saved.step, saved.error_message) == ("processing", "ocr", None)
+    assert [args for name, args in queued if name == "triton.workers.cpu_ml_tasks.ocr_page"] == [
+        (pages[0], 0),
+        (pages[1], 1),
+    ]

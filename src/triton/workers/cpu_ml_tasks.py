@@ -55,9 +55,9 @@ def ocr_parallel(task_id: str, file_path: str):
         db.commit()
 
         page_tasks = [ocr_page.s(img_path, page_num) for page_num, img_path in enumerate(page_images)]
-        callback = ocr_aggregate.s(task_id, len(page_images))
-        error_callback = ocr_chord_error.s(task_id)
-        chord(page_tasks)(callback, link_error=error_callback)
+        # The errback goes on the body: chord(...)(body, link_error=...) passes it to the header group, which Celery rejects.
+        callback = ocr_aggregate.s(task_id, len(page_images)).on_error(ocr_chord_error.s(task_id))
+        chord(page_tasks)(callback)
 
     except Exception as e:
         task.status = "failed"
